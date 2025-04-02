@@ -127,12 +127,11 @@ exports.getSchemas = async (req, res) => {
 exports.testConnection = async (req, res) => {
   try {
     // Ejecutar una consulta simple para verificar la conexión
-    const result = await db.executeQuery('SELECT 1 as test');
+    await db.executeQuery('SELECT 1 as test');
     
     res.status(200).json({
       success: true,
-      message: 'Conexión a la base de datos establecida correctamente',
-      data: result.rows // Incluir datos para mantener consistencia
+      message: 'Conexión a la base de datos establecida correctamente'
     });
   } catch (error) {
     console.error('Error al verificar conexión:', error);

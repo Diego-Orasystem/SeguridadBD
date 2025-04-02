@@ -18,8 +18,8 @@
       <mat-form-field appearance="outline" class="form-field">
         <mat-label>Columna</mat-label>
         <mat-select formControlName="column_name" required [disabled]="columns.length === 0">
-          <mat-option *ngFor="let column of columns" [value]="column.column_name">
-            {{ column.column_name }} ({{ column.data_type }})
+          <mat-option *ngFor="let column of columns" [value]="column.COLUMN_NAME">
+            {{ column.COLUMN_NAME }} ({{ column.DATA_TYPE }})
           </mat-option>
         </mat-select>
         <mat-spinner *ngIf="loading" diameter="20" class="select-spinner"></mat-spinner>
