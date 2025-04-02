@@ -216,127 +216,109 @@ export class MaskingService {
     // Comentarios iniciales
     script += `-- Script para aplicar enmascaramiento a ${rule.column_name} en la tabla ${rule.table_name}\n`;
     script += `-- Tipo de enmascaramiento: ${this.formatMaskingType(rule.masking_type)}\n`;
-    script += `-- Basado en técnica de respaldo de tabla y reemplazo\n\n`;
+    script += `-- Basado en técnica de vistas y triggers para enmascaramiento de datos\n\n`;
     
-    // Expresión de enmascaramiento
+    // Paso 1: Crear la vista con enmascaramiento (SQL Server)
+    script += `-- Paso 1: Crear la vista con enmascaramiento\n`;
+    script += `IF EXISTS (SELECT * FROM sys.views WHERE name = '${rule.table_name}_v')\n`;
+    script += `  DROP VIEW ${rule.table_name}_v;\nGO\n\n`;
+    script += `CREATE VIEW ${rule.table_name}_v AS\n`;
+    script += `SELECT\n`;
+    
+    // Generar la expresión de enmascaramiento para la columna específica (SQL Server)
     let maskingExpression = '';
     switch (rule.masking_type) {
       case 'FULL_MASK':
-        maskingExpression = `'XXXX'`;
+        maskingExpression = `'XXXX' AS ${rule.column_name}`;
         break;
       
       case 'PARTIAL_MASK':
         const visibleChars = ruleWithoutType['visible_characters'] || 2;
-        maskingExpression = `CASE
-    WHEN LEN(${rule.column_name}) <= ${visibleChars} THEN ${rule.column_name}
-    ELSE LEFT(${rule.column_name}, ${visibleChars}) + REPLICATE('X', LEN(${rule.column_name}) - ${visibleChars})
-  END`;
+        maskingExpression = `CASE\n`;
+        maskingExpression += `    WHEN LEN(${rule.column_name}) <= ${visibleChars} THEN ${rule.column_name}\n`;
+        maskingExpression += `    ELSE LEFT(${rule.column_name}, ${visibleChars}) + REPLICATE('X', LEN(${rule.column_name}) - ${visibleChars})\n`;
+        maskingExpression += `  END AS ${rule.column_name}`;
         break;
       
       case 'EMAIL_MASK':
-        maskingExpression = `CASE
-    WHEN ${rule.column_name} NOT LIKE '%@%' THEN 'XXX@example.com'
-    WHEN LEN(SUBSTRING(${rule.column_name}, 1, CHARINDEX('@', ${rule.column_name}) - 1)) <= 2 THEN ${rule.column_name}
-    ELSE LEFT(SUBSTRING(${rule.column_name}, 1, CHARINDEX('@', ${rule.column_name}) - 1), 2) + 'XXX@' + SUBSTRING(${rule.column_name}, CHARINDEX('@', ${rule.column_name}) + 1, LEN(${rule.column_name}))
-  END`;
+        maskingExpression = `CASE\n`;
+        maskingExpression += `    WHEN ${rule.column_name} NOT LIKE '%@%' THEN 'XXX@example.com'\n`;
+        maskingExpression += `    WHEN LEN(SUBSTRING(${rule.column_name}, 1, CHARINDEX('@', ${rule.column_name}) - 1)) <= 2 THEN ${rule.column_name}\n`;
+        maskingExpression += `    ELSE LEFT(SUBSTRING(${rule.column_name}, 1, CHARINDEX('@', ${rule.column_name}) - 1), 2) + 'XXX@' + SUBSTRING(${rule.column_name}, CHARINDEX('@', ${rule.column_name}) + 1, LEN(${rule.column_name}))\n`;
+        maskingExpression += `  END AS ${rule.column_name}`;
         break;
       
       case 'CREDIT_CARD_MASK':
-        maskingExpression = `CASE
-    WHEN LEN(${rule.column_name}) < 4 THEN 'XXXX-XXXX-XXXX-XXXX'
-    ELSE 'XXXX-XXXX-XXXX-' + RIGHT(${rule.column_name}, 4)
-  END`;
+        maskingExpression = `CASE\n`;
+        maskingExpression += `    WHEN LEN(${rule.column_name}) < 4 THEN 'XXXX-XXXX-XXXX-XXXX'\n`;
+        maskingExpression += `    ELSE 'XXXX-XXXX-XXXX-' + RIGHT(${rule.column_name}, 4)\n`;
+        maskingExpression += `  END AS ${rule.column_name}`;
         break;
       
       case 'RANDOM':
-        maskingExpression = `'RANDOM_' + CAST(CAST(RAND() * 10000 AS INT) AS VARCHAR(10))`;
+        maskingExpression = `'RANDOM_' + CAST(CAST(RAND() * 10000 AS INT) AS VARCHAR(10)) AS ${rule.column_name}`;
         break;
       
       default:
-        maskingExpression = `'[MASKED]'`;
+        maskingExpression = `'[MASKED]' AS ${rule.column_name}`;
         break;
     }
     
-    // Paso 1: Verificar si tenemos un respaldo de la tabla original
-    script += `-- Paso 1: Verificar si existe respaldo de la tabla original\n`;
-    script += `IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '${rule.table_name}_original')\n`;
+    // Incluir la columna modificada y todas las demás columnas (excepto la que se enmascara)
+    script += `  ${maskingExpression},\n`;
+    // Seleccionar todas las columnas excepto la que estamos enmascarando
+    script += `  -- Seleccionar todas las demás columnas excepto la que se está enmascarando\n`;
+    script += `  t.id,\n`;
+    script += `  -- Aquí deben incluirse todas las demás columnas de la tabla excepto ${rule.column_name}\n`;
+    script += `  -- Ejemplo: t.nombre, t.apellido, t.telefono, etc.\n`;
+    script += `FROM ${rule.table_name} t;\nGO\n\n`;
+    
+    // Paso 2: Crear trigger para INSERT (SQL Server)
+    script += `-- Paso 2: Crear trigger para permitir INSERT a través de la vista\n`;
+    script += `IF EXISTS (SELECT * FROM sys.triggers WHERE name = '${rule.table_name}_v_insert')\n`;
+    script += `  DROP TRIGGER ${rule.table_name}_v_insert;\nGO\n\n`;
+    script += `CREATE TRIGGER ${rule.table_name}_v_insert\n`;
+    script += `ON ${rule.table_name}_v\n`;
+    script += `INSTEAD OF INSERT\n`;
+    script += `AS\n`;
     script += `BEGIN\n`;
-    script += `  -- Aún no existe respaldo, así que respaldamos la tabla original\n`;
-    script += `  PRINT 'Creando respaldo de la tabla original...'\n`;
-    script += `  EXEC sp_rename '${rule.table_name}', '${rule.table_name}_original';\n`;
-    script += `END\n`;
-    script += `ELSE\n`;
+    script += `  SET NOCOUNT ON;\n`;
+    script += `  INSERT INTO ${rule.table_name} (${rule.column_name}, id /* , otras columnas */)\n`;
+    script += `  SELECT ${rule.column_name}, id /* , otras columnas */ FROM inserted;\n`;
+    script += `END;\nGO\n\n`;
+    
+    // Paso 3: Crear trigger para UPDATE (SQL Server)
+    script += `-- Paso 3: Crear trigger para permitir UPDATE a través de la vista\n`;
+    script += `IF EXISTS (SELECT * FROM sys.triggers WHERE name = '${rule.table_name}_v_update')\n`;
+    script += `  DROP TRIGGER ${rule.table_name}_v_update;\nGO\n\n`;
+    script += `CREATE TRIGGER ${rule.table_name}_v_update\n`;
+    script += `ON ${rule.table_name}_v\n`;
+    script += `INSTEAD OF UPDATE\n`;
+    script += `AS\n`;
     script += `BEGIN\n`;
-    script += `  -- Ya existe un respaldo, verificar si existe la vista para eliminarla\n`;
-    script += `  IF EXISTS (SELECT * FROM sys.views WHERE name = '${rule.table_name}')\n`;
-    script += `  BEGIN\n`;
-    script += `    PRINT 'Eliminando vista existente...';\n`;
-    script += `    DROP VIEW ${rule.table_name};\n`;
-    script += `  END\n`;
-    script += `END\n`;
-    script += `GO\n\n`;
+    script += `  SET NOCOUNT ON;\n`;
+    script += `  UPDATE t SET\n`;
+    script += `    t.${rule.column_name} = i.${rule.column_name}\n`;
+    script += `    /* , otras columnas t.col = i.col */\n`;
+    script += `  FROM ${rule.table_name} t\n`;
+    script += `  INNER JOIN inserted i ON t.id = i.id; -- Asumiendo que 'id' es la clave primaria\n`;
+    script += `END;\nGO\n\n`;
     
-    // Paso 2: Crear la vista con el nombre de la tabla original
-    script += `-- Paso 2: Crear la vista con el mismo nombre que la tabla original\n`;
-    script += `CREATE VIEW ${rule.table_name} AS\n`;
-    script += `SELECT\n`;
+    // Paso 4: Instrucciones para renombrar objetos (SQL Server)
+    script += `-- Paso 4: Renombrar objetos (ejecutar cuando esté listo para aplicar el enmascaramiento)\n`;
+    script += `-- EXEC sp_rename '${rule.table_name}', '${rule.table_name}_tbl';\n`;
+    script += `-- EXEC sp_rename '${rule.table_name}_v', '${rule.table_name}';\n\n`;
     
-    // Lista de columnas
-    if (rule.table_name === 'usuarios') {
-      script += `  id,\n`;
-      script += `  username,\n`;
-      script += `  password,\n`;
-      
-      // Aplicar enmascaramiento solo a la columna especificada
-      if (rule.column_name === 'email') {
-        script += `  ${maskingExpression} AS email,\n`;
-      } else {
-        script += `  email,\n`;
-      }
-      
-      // Aplicar enmascaramiento a otras columnas si es necesario
-      if (rule.column_name !== 'email') {
-        script += `  ${maskingExpression} AS ${rule.column_name},\n`;
-      }
-      
-      script += `  is_active,\n`;
-      script += `  created_at,\n`;
-      script += `  updated_at\n`;
-    } else {
-      script += `  id,\n`;
-      
-      // Aplicar enmascaramiento a la columna especificada
-      script += `  ${maskingExpression} AS ${rule.column_name},\n`;
-      
-      script += `  -- IMPORTANTE: Añadir aquí todas las demás columnas excepto ${rule.column_name}\n`;
-      script += `  -- Ejemplo: nombre, apellido, telefono, etc.\n`;
-      script += `  created_at,\n`;
-      script += `  updated_at\n`;
-    }
-    
-    script += `FROM ${rule.table_name}_original;\n`;
-    script += `GO\n\n`;
-    
-    // Paso 3: Verificar la vista
-    script += `-- Paso 3: Verificar que la vista funciona correctamente\n`;
-    script += `PRINT 'Verificando vista creada...';\n`;
-    script += `SELECT TOP 5 * FROM ${rule.table_name};\n`;
-    script += `GO\n\n`;
-    
-    // Instrucciones para revertir cambios
+    // Instrucciones para revertir cambios (SQL Server)
     script += `-- Para revertir los cambios (si es necesario):\n`;
-    script += `--\n`;
-    script += `-- -- Eliminar la vista\n`;
     script += `-- DROP VIEW ${rule.table_name};\n`;
-    script += `-- -- Restaurar la tabla original\n`;
-    script += `-- EXEC sp_rename '${rule.table_name}_original', '${rule.table_name}';\n`;
-    script += `-- GO\n\n`;
+    script += `-- EXEC sp_rename '${rule.table_name}_tbl', '${rule.table_name}';\n\n`;
     
-    // Comentario final
-    script += `-- IMPORTANTE: Este script implementa enmascaramiento mediante el siguiente proceso:\n`;
-    script += `-- 1. Renombra la tabla original a '${rule.table_name}_original'\n`;
-    script += `-- 2. Crea una vista con el nombre original de la tabla que enmascara los datos\n`;
-    script += `-- 3. Todas las consultas seguirán funcionando pero ahora devolverán datos enmascarados\n`;
+    // Comentario final importante
+    script += `-- IMPORTANTE: Este script es una plantilla que debe ser adaptada.\n`;
+    script += `-- 1. Debe incluir todas las columnas de la tabla excepto la que se está enmascarando.\n`;
+    script += `-- 2. Asegúrese de usar la clave primaria correcta en los triggers (actualmente asume 'id').\n`;
+    script += `-- 3. Modifique el script según la estructura específica de su tabla antes de ejecutarlo.\n`;
     
     return script;
   }

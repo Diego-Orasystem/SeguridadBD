@@ -278,6 +278,7 @@ export class MaskingService {
     
     // Paso 2: Crear la vista con el nombre de la tabla original
     script += `-- Paso 2: Crear la vista con el mismo nombre que la tabla original\n`;
+    script += `PRINT 'Creando vista enmascarada con el nombre de la tabla original...';\n`;
     script += `CREATE VIEW ${rule.table_name} AS\n`;
     script += `SELECT\n`;
     
