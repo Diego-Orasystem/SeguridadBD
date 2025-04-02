@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DatabaseService } from '../../services/database.service';
 import { MaskingRule } from '../../models/masking-rule.model';
 import { MaskingService } from '../../services/masking.service';
-import { ApiResponse, TableData, Column } from '../../models/database.model';
 
 @Component({
   selector: 'app-masking-rule-form',
@@ -16,7 +15,7 @@ export class MaskingRuleFormComponent implements OnInit {
 
   maskingRuleForm: FormGroup;
   tables: string[] = [];
-  columns: Column[] = [];
+  columns: any[] = [];
   previewData: any[] = [];
   tablesLoading = false;
   columnsLoading = false;
@@ -53,7 +52,7 @@ export class MaskingRuleFormComponent implements OnInit {
   loadTablesManually(): void {
     this.tablesLoading = true;
     this.databaseService.getTables().subscribe({
-      next: (response: ApiResponse<any[]>) => {
+      next: (response) => {
         if (response.success && response.data) {
           this.tables = response.data.map((table: any) => table.table_name);
           console.log('Tablas cargadas:', this.tables);
@@ -63,7 +62,7 @@ export class MaskingRuleFormComponent implements OnInit {
         }
         this.tablesLoading = false;
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('Error al cargar tablas:', error);
         this.useTestData();
         this.tablesLoading = false;
@@ -92,7 +91,7 @@ export class MaskingRuleFormComponent implements OnInit {
     this.columns = [];
     
     this.databaseService.getTableColumns(tableName).subscribe({
-      next: (response: ApiResponse<Column[]>) => {
+      next: (response) => {
         if (response.success && response.data) {
           this.columns = response.data;
           console.log(`Columnas cargadas para ${tableName}:`, this.columns);
@@ -102,7 +101,7 @@ export class MaskingRuleFormComponent implements OnInit {
         }
         this.columnsLoading = false;
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error(`Error al cargar columnas para ${tableName}:`, error);
         this.useTestColumns(tableName);
         this.columnsLoading = false;
@@ -113,33 +112,33 @@ export class MaskingRuleFormComponent implements OnInit {
   useTestColumns(tableName: string): void {
     if (tableName === 'clientes') {
       this.columns = [
-        { column_name: 'id', data_type: 'number', data_length: 0, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'N' },
-        { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'nombre', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'apellido', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'apellido', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'email', data_type: 'varchar2', data_length: 100, nullable: 'Y', COLUMN_NAME: 'email', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'Y' },
-        { column_name: 'telefono', data_type: 'varchar2', data_length: 20, nullable: 'Y', COLUMN_NAME: 'telefono', DATA_TYPE: 'varchar2', DATA_LENGTH: 20, NULLABLE: 'Y' },
-        { column_name: 'direccion', data_type: 'varchar2', data_length: 200, nullable: 'Y', COLUMN_NAME: 'direccion', DATA_TYPE: 'varchar2', DATA_LENGTH: 200, NULLABLE: 'Y' },
-        { column_name: 'ciudad', data_type: 'varchar2', data_length: 100, nullable: 'Y', COLUMN_NAME: 'ciudad', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'Y' },
-        { column_name: 'pais', data_type: 'varchar2', data_length: 100, nullable: 'Y', COLUMN_NAME: 'pais', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'Y' },
-        { column_name: 'tarjeta_credito', data_type: 'varchar2', data_length: 16, nullable: 'Y', COLUMN_NAME: 'tarjeta_credito', DATA_TYPE: 'varchar2', DATA_LENGTH: 16, NULLABLE: 'Y' }
+        { column_name: 'id', data_type: 'number', data_length: null, nullable: 'N' },
+        { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N' },
+        { column_name: 'apellido', data_type: 'varchar2', data_length: 100, nullable: 'N' },
+        { column_name: 'email', data_type: 'varchar2', data_length: 100, nullable: 'Y' },
+        { column_name: 'telefono', data_type: 'varchar2', data_length: 20, nullable: 'Y' },
+        { column_name: 'direccion', data_type: 'varchar2', data_length: 200, nullable: 'Y' },
+        { column_name: 'ciudad', data_type: 'varchar2', data_length: 100, nullable: 'Y' },
+        { column_name: 'pais', data_type: 'varchar2', data_length: 100, nullable: 'Y' },
+        { column_name: 'tarjeta_credito', data_type: 'varchar2', data_length: 16, nullable: 'Y' }
       ];
     } else if (tableName === 'empleados') {
       this.columns = [
-        { column_name: 'id', data_type: 'number', data_length: 0, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'N' },
-        { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'nombre', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'apellido', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'apellido', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'email', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'email', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'salario', data_type: 'number', data_length: 0, nullable: 'Y', COLUMN_NAME: 'salario', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'Y' },
-        { column_name: 'fecha_contratacion', data_type: 'date', data_length: 0, nullable: 'Y', COLUMN_NAME: 'fecha_contratacion', DATA_TYPE: 'date', DATA_LENGTH: 0, NULLABLE: 'Y' },
-        { column_name: 'departamento', data_type: 'varchar2', data_length: 100, nullable: 'Y', COLUMN_NAME: 'departamento', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'Y' }
+        { column_name: 'id', data_type: 'number', data_length: null, nullable: 'N' },
+        { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N' },
+        { column_name: 'apellido', data_type: 'varchar2', data_length: 100, nullable: 'N' },
+        { column_name: 'email', data_type: 'varchar2', data_length: 100, nullable: 'N' },
+        { column_name: 'salario', data_type: 'number', data_length: null, nullable: 'Y' },
+        { column_name: 'fecha_contratacion', data_type: 'date', data_length: null, nullable: 'Y' },
+        { column_name: 'departamento', data_type: 'varchar2', data_length: 100, nullable: 'Y' }
       ];
     } else {
       // Columnas genéricas para otras tablas
       this.columns = [
-        { column_name: 'id', data_type: 'number', data_length: 0, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'N' },
-        { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'nombre', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'descripcion', data_type: 'varchar2', data_length: 200, nullable: 'Y', COLUMN_NAME: 'descripcion', DATA_TYPE: 'varchar2', DATA_LENGTH: 200, NULLABLE: 'Y' },
-        { column_name: 'fecha_creacion', data_type: 'date', data_length: 0, nullable: 'Y', COLUMN_NAME: 'fecha_creacion', DATA_TYPE: 'date', DATA_LENGTH: 0, NULLABLE: 'Y' }
+        { column_name: 'id', data_type: 'number', data_length: null, nullable: 'N' },
+        { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N' },
+        { column_name: 'descripcion', data_type: 'varchar2', data_length: 200, nullable: 'Y' },
+        { column_name: 'fecha_creacion', data_type: 'date', data_length: null, nullable: 'Y' }
       ];
     }
     console.log(`Usando datos de prueba para columnas de ${tableName}:`, this.columns);
@@ -154,7 +153,7 @@ export class MaskingRuleFormComponent implements OnInit {
     this.previewData = [];
     
     this.databaseService.getTablePreview(tableName).subscribe({
-      next: (response: ApiResponse<any[]>) => {
+      next: (response) => {
         if (response.success && response.data) {
           this.previewData = response.data;
           console.log(`Vista previa cargada para ${tableName}:`, this.previewData);
@@ -164,7 +163,7 @@ export class MaskingRuleFormComponent implements OnInit {
         }
         this.previewLoading = false;
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error(`Error al cargar vista previa para ${tableName}:`, error);
         this.useTestPreview(tableName);
         this.previewLoading = false;
@@ -268,7 +267,7 @@ export class MaskingRuleFormComponent implements OnInit {
       };
       
       this.maskingService.createMaskingRule(newRule).subscribe({
-        next: (response: any) => {
+        next: (response) => {
           if (response.success) {
             this.ruleCreated.emit(response.data || newRule);
             this.resetForm();
@@ -279,7 +278,7 @@ export class MaskingRuleFormComponent implements OnInit {
             this.resetForm();
           }
         },
-        error: (error: any) => {
+        error: (error) => {
           console.error('Error al crear regla:', error);
           // En caso de error, también emitimos la regla en modo prueba
           this.ruleCreated.emit(newRule);

@@ -1,0 +1,147 @@
+<div class="masking-rule-form">
+  <h2>{{ editingRule ? 'Editar' : 'Crear' }} Regla de Enmascaramiento</h2>
+  
+  <form [formGroup]="ruleForm" (ngSubmit)="onSubmit()">
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Tabla</mat-label>
+        <mat-select formControlName="table_name" required>
+          <mat-option *ngFor="let table of tables" [value]="table.table_name">
+            {{ table.table_name }}
+          </mat-option>
+        </mat-select>
+        <button *ngIf="tablesLoading" matSuffix mat-icon-button disabled>
+          <mat-spinner diameter="20"></mat-spinner>
+        </button>
+        <button *ngIf="!tablesLoading" matSuffix mat-icon-button (click)="loadTablesManually(); $event.stopPropagation()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <mat-error *ngIf="ruleForm.get('table_name')?.hasError('required')">
+          La tabla es obligatoria
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Columna</mat-label>
+        <mat-select formControlName="column_name" required [disabled]="columns.length === 0">
+          <mat-option *ngFor="let column of columns" [value]="column.column_name">
+            {{ column.column_name }} ({{ column.data_type }})
+          </mat-option>
+        </mat-select>
+        <mat-spinner *ngIf="loading" diameter="20" class="select-spinner"></mat-spinner>
+        <mat-error *ngIf="ruleForm.get('column_name')?.hasError('required')">
+          La columna es obligatoria
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Tipo de Enmascaramiento</mat-label>
+        <mat-select formControlName="masking_type" required>
+          <mat-option *ngFor="let type of maskingTypes" [value]="type.value">
+            {{ type.label }}
+          </mat-option>
+        </mat-select>
+        <mat-error *ngIf="ruleForm.get('masking_type')?.hasError('required')">
+          El tipo de enmascaramiento es obligatorio
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field" *ngIf="ruleForm.get('masking_type')?.value !== 'EMAIL' && ruleForm.get('masking_type')?.value !== 'FULL_MASK'">
+        <mat-label>Caracteres Visibles</mat-label>
+        <input matInput type="number" formControlName="visible_chars" min="0" max="20">
+        <mat-hint>Número de caracteres que permanecerán visibles</mat-hint>
+        <mat-error *ngIf="ruleForm.get('visible_chars')?.hasError('min')">
+          El valor mínimo es 0
+        </mat-error>
+        <mat-error *ngIf="ruleForm.get('visible_chars')?.hasError('max')">
+          El valor máximo es 20
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Vista previa de los datos -->
+    <div class="preview-container" *ngIf="showPreview && selectedColumnData.length > 0">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Vista Previa de Datos</mat-card-title>
+          <mat-card-subtitle>
+            Tabla: <strong>{{ ruleForm.get('table_name')?.value }}</strong> | 
+            Columna: <strong>{{ ruleForm.get('column_name')?.value }}</strong>
+          </mat-card-subtitle>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="preview-loading" *ngIf="previewLoading">
+            <mat-spinner diameter="30"></mat-spinner>
+            <span>Cargando datos...</span>
+          </div>
+          
+          <div class="preview-table-container" *ngIf="!previewLoading">
+            <h3>Datos originales vs. enmascarados</h3>
+            <table class="preview-table mat-elevation-z1">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Datos Originales</th>
+                  <th>Datos Enmascarados</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let data of selectedColumnData; let i = index">
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ data }}</td>
+                  <td><strong>{{ maskedColumnData[i] }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+    
+    <!-- Vista previa de tabla completa -->
+    <div class="table-preview-container" *ngIf="showPreview && previewData.length > 0 && !ruleForm.get('column_name')?.value">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Vista Previa de la Tabla</mat-card-title>
+          <mat-card-subtitle>
+            Tabla: <strong>{{ ruleForm.get('table_name')?.value }}</strong> | 
+            Mostrando los primeros 5 registros
+          </mat-card-subtitle>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="preview-loading" *ngIf="previewLoading">
+            <mat-spinner diameter="30"></mat-spinner>
+            <span>Cargando datos...</span>
+          </div>
+          
+          <div class="preview-table-container" *ngIf="!previewLoading">
+            <table class="preview-table full-table mat-elevation-z1">
+              <thead>
+                <tr>
+                  <th *ngFor="let col of getTableColumns()">{{ col }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of previewData">
+                  <td *ngFor="let col of getTableColumns()">{{ row[col] }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="select-column-hint">Seleccione una columna para ver cómo se vería enmascarada</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="form-actions">
+      <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="ruleForm.invalid">
+        {{ editingRule ? 'Actualizar' : 'Crear' }} Regla
+      </button>
+    </div>
+  </form>
+</div> 

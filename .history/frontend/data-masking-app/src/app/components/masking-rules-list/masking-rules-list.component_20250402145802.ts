@@ -6,7 +6,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MaskingService } from '../../services/masking.service';
 import { DatabaseService } from '../../services/database.service';
-import { MaskingRule } from '../../models/masking-rule.model';
+import { MaskingRule, MaskingType } from '../../models/masking.model';
+import { Table } from '../../models/database.model';
+import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+import { TriggerDialogComponent } from '../trigger-dialog/trigger-dialog.component';
 
 @Component({
   selector: 'app-masking-rules-list',
@@ -18,13 +21,19 @@ export class MaskingRulesListComponent implements OnInit {
   @ViewChild(MatSort) sort!: MatSort;
 
   displayedColumns: string[] = ['id', 'table_name', 'column_name', 'masking_type', 'is_active', 'created_at', 'actions'];
-  dataSource = new MatTableDataSource<any>([]);
+  dataSource = new MatTableDataSource<MaskingRule>([]);
+  tables: Table[] = [];
+  selectedSchema: string = '';
   loading = false;
   showForm = false;
   showPreview = false;
-  selectedRule: any = null;
+  selectedRule: MaskingRule | null = null;
   comparisonData: { original: any, masked: any }[] = [];
-  sqlScript: string = '';
+  
+  // Para mostrar comparativa después de crear regla
+  lastCreatedRule: MaskingRule | null = null;
+  showComparison = false;
+  comparisonLoading = false;
 
   constructor(
     private maskingService: MaskingService,
@@ -35,6 +44,7 @@ export class MaskingRulesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadMaskingRules();
+    this.loadTables();
   }
 
   loadMaskingRules(): void {
@@ -65,7 +75,7 @@ export class MaskingRulesListComponent implements OnInit {
 
   loadSampleRules(): void {
     // Datos de muestra para demostración
-    const sampleRules = [
+    const sampleRules: MaskingRule[] = [
       {
         id: 1,
         table_name: 'clientes',
@@ -105,6 +115,34 @@ export class MaskingRulesListComponent implements OnInit {
     });
   }
 
+  loadTables(): void {
+    this.databaseService.getTables(this.selectedSchema)
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.tables = response.data;
+            console.log('Tablas cargadas:', this.tables);
+          } else {
+            console.warn('No se recibieron datos de tablas o la respuesta no fue exitosa');
+            this.tables = [];
+          }
+        },
+        error: (error) => {
+          console.error('Error al cargar tablas:', error);
+          this.snackBar.open(
+            error.error?.message || 'Error al cargar tablas',
+            'Cerrar',
+            { duration: 5000 }
+          );
+          this.tables = [];
+        }
+      });
+  }
+
+  onSchemaChange(): void {
+    this.loadTables();
+  }
+
   toggleForm(): void {
     this.showForm = !this.showForm;
     if (!this.showForm) {
@@ -113,7 +151,7 @@ export class MaskingRulesListComponent implements OnInit {
     }
   }
 
-  onRuleCreated(rule: any): void {
+  onRuleCreated(rule: MaskingRule): void {
     this.showForm = false;
     // Recargar las reglas
     this.loadMaskingRules();
@@ -121,13 +159,13 @@ export class MaskingRulesListComponent implements OnInit {
     this.previewRule(rule);
   }
 
-  editRule(rule: any): void {
+  editRule(rule: MaskingRule): void {
     // Aquí implementaríamos la lógica para editar una regla existente
     console.log('Editar regla:', rule);
     // Por ahora, simplemente mostramos la regla en la consola
   }
 
-  deleteRule(rule: any): void {
+  deleteRule(rule: MaskingRule): void {
     if (confirm(`¿Está seguro de que desea eliminar la regla para ${rule.table_name}.${rule.column_name}?`)) {
       this.maskingService.deleteMaskingRule(rule.id).subscribe({
         next: (response) => {
@@ -144,9 +182,9 @@ export class MaskingRulesListComponent implements OnInit {
     }
   }
 
-  toggleRuleStatus(rule: any): void {
+  toggleRuleStatus(rule: MaskingRule): void {
     // Actualizar el estado de la regla
-    const updatedRule = {
+    const updatedRule: Partial<MaskingRule> = {
       is_active: !rule.is_active
     };
 
@@ -165,12 +203,9 @@ export class MaskingRulesListComponent implements OnInit {
     });
   }
 
-  previewRule(rule: any): void {
+  previewRule(rule: MaskingRule): void {
     this.selectedRule = rule;
     this.showPreview = true;
-    
-    // Generar el script SQL
-    this.sqlScript = this.maskingService.generateMaskingScript(rule);
     
     // Cargar datos para la vista previa
     this.databaseService.getTablePreview(rule.table_name).subscribe({
@@ -179,7 +214,7 @@ export class MaskingRulesListComponent implements OnInit {
           // Preparar datos para la comparación
           this.comparisonData = response.data.slice(0, 5).map(row => ({
             original: row[rule.column_name],
-            masked: this.maskingService.applyMaskingPreview(row[rule.column_name], rule.masking_type, rule.visible_characters)
+            masked: this.maskingService.applyMaskingPreview(row[rule.column_name], rule.masking_type)
           }));
         } else {
           this.simulateComparisonData(rule);
@@ -192,7 +227,7 @@ export class MaskingRulesListComponent implements OnInit {
     });
   }
 
-  simulateComparisonData(rule: any): void {
+  simulateComparisonData(rule: MaskingRule): void {
     // Datos simulados para la vista previa
     const dataMap: Record<string, any[]> = {
       'email': [
@@ -252,46 +287,15 @@ export class MaskingRulesListComponent implements OnInit {
     this.showPreview = false;
     this.selectedRule = null;
     this.comparisonData = [];
-    this.sqlScript = '';
-  }
-
-  executeScript(): void {
-    if (!this.selectedRule) {
-      return;
-    }
-
-    this.loading = true;
-    
-    // Si estamos en modo simulado, mostrar un mensaje de éxito después de un tiempo
-    if (this.selectedRule.id) {
-      this.maskingService.applyMasking(this.selectedRule.id).subscribe({
-        next: (response) => {
-          this.loading = false;
-          if (response.success) {
-            this.snackBar.open('Script ejecutado correctamente. Datos enmascarados.', 'Cerrar', {
-              duration: 5000
-            });
-            // Actualizar la lista de reglas
-            this.loadMaskingRules();
-            // Cerrar la vista previa
-            this.closePreview();
-          } else {
-            this.snackBar.open('Error al ejecutar el script', 'Cerrar', {
-              duration: 5000
-            });
-          }
-        },
-        error: (error) => {
-          this.loading = false;
-          this.snackBar.open('Error al ejecutar el script: ' + (error.message || 'Error desconocido'), 'Cerrar', {
-            duration: 5000
-          });
-        }
-      });
-    }
   }
 
   formatMaskingType(type: string): string {
     return this.maskingService.formatMaskingType(type);
+  }
+
+  formatDate(dateStr: string | undefined): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleString('es-ES');
   }
 } 

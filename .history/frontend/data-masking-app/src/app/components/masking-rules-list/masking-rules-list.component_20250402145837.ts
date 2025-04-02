@@ -3,7 +3,6 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MaskingService } from '../../services/masking.service';
 import { DatabaseService } from '../../services/database.service';
 import { MaskingRule } from '../../models/masking-rule.model';
@@ -24,13 +23,11 @@ export class MaskingRulesListComponent implements OnInit {
   showPreview = false;
   selectedRule: any = null;
   comparisonData: { original: any, masked: any }[] = [];
-  sqlScript: string = '';
 
   constructor(
     private maskingService: MaskingService,
     private databaseService: DatabaseService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -169,9 +166,6 @@ export class MaskingRulesListComponent implements OnInit {
     this.selectedRule = rule;
     this.showPreview = true;
     
-    // Generar el script SQL
-    this.sqlScript = this.maskingService.generateMaskingScript(rule);
-    
     // Cargar datos para la vista previa
     this.databaseService.getTablePreview(rule.table_name).subscribe({
       next: (response) => {
@@ -179,7 +173,7 @@ export class MaskingRulesListComponent implements OnInit {
           // Preparar datos para la comparación
           this.comparisonData = response.data.slice(0, 5).map(row => ({
             original: row[rule.column_name],
-            masked: this.maskingService.applyMaskingPreview(row[rule.column_name], rule.masking_type, rule.visible_characters)
+            masked: this.maskingService.applyMaskingPreview(row[rule.column_name], rule.masking_type)
           }));
         } else {
           this.simulateComparisonData(rule);
@@ -252,43 +246,6 @@ export class MaskingRulesListComponent implements OnInit {
     this.showPreview = false;
     this.selectedRule = null;
     this.comparisonData = [];
-    this.sqlScript = '';
-  }
-
-  executeScript(): void {
-    if (!this.selectedRule) {
-      return;
-    }
-
-    this.loading = true;
-    
-    // Si estamos en modo simulado, mostrar un mensaje de éxito después de un tiempo
-    if (this.selectedRule.id) {
-      this.maskingService.applyMasking(this.selectedRule.id).subscribe({
-        next: (response) => {
-          this.loading = false;
-          if (response.success) {
-            this.snackBar.open('Script ejecutado correctamente. Datos enmascarados.', 'Cerrar', {
-              duration: 5000
-            });
-            // Actualizar la lista de reglas
-            this.loadMaskingRules();
-            // Cerrar la vista previa
-            this.closePreview();
-          } else {
-            this.snackBar.open('Error al ejecutar el script', 'Cerrar', {
-              duration: 5000
-            });
-          }
-        },
-        error: (error) => {
-          this.loading = false;
-          this.snackBar.open('Error al ejecutar el script: ' + (error.message || 'Error desconocido'), 'Cerrar', {
-            duration: 5000
-          });
-        }
-      });
-    }
   }
 
   formatMaskingType(type: string): string {

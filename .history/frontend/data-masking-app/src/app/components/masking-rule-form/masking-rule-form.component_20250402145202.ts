@@ -113,7 +113,7 @@ export class MaskingRuleFormComponent implements OnInit {
   useTestColumns(tableName: string): void {
     if (tableName === 'clientes') {
       this.columns = [
-        { column_name: 'id', data_type: 'number', data_length: 0, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'N' },
+        { column_name: 'id', data_type: 'number', data_length: null, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: null, NULLABLE: 'N' },
         { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'nombre', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
         { column_name: 'apellido', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'apellido', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
         { column_name: 'email', data_type: 'varchar2', data_length: 100, nullable: 'Y', COLUMN_NAME: 'email', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'Y' },
@@ -125,21 +125,21 @@ export class MaskingRuleFormComponent implements OnInit {
       ];
     } else if (tableName === 'empleados') {
       this.columns = [
-        { column_name: 'id', data_type: 'number', data_length: 0, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'N' },
+        { column_name: 'id', data_type: 'number', data_length: null, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: null, NULLABLE: 'N' },
         { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'nombre', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
         { column_name: 'apellido', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'apellido', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
         { column_name: 'email', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'email', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
-        { column_name: 'salario', data_type: 'number', data_length: 0, nullable: 'Y', COLUMN_NAME: 'salario', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'Y' },
-        { column_name: 'fecha_contratacion', data_type: 'date', data_length: 0, nullable: 'Y', COLUMN_NAME: 'fecha_contratacion', DATA_TYPE: 'date', DATA_LENGTH: 0, NULLABLE: 'Y' },
+        { column_name: 'salario', data_type: 'number', data_length: null, nullable: 'Y', COLUMN_NAME: 'salario', DATA_TYPE: 'number', DATA_LENGTH: null, NULLABLE: 'Y' },
+        { column_name: 'fecha_contratacion', data_type: 'date', data_length: null, nullable: 'Y', COLUMN_NAME: 'fecha_contratacion', DATA_TYPE: 'date', DATA_LENGTH: null, NULLABLE: 'Y' },
         { column_name: 'departamento', data_type: 'varchar2', data_length: 100, nullable: 'Y', COLUMN_NAME: 'departamento', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'Y' }
       ];
     } else {
       // Columnas genéricas para otras tablas
       this.columns = [
-        { column_name: 'id', data_type: 'number', data_length: 0, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: 0, NULLABLE: 'N' },
+        { column_name: 'id', data_type: 'number', data_length: null, nullable: 'N', COLUMN_NAME: 'id', DATA_TYPE: 'number', DATA_LENGTH: null, NULLABLE: 'N' },
         { column_name: 'nombre', data_type: 'varchar2', data_length: 100, nullable: 'N', COLUMN_NAME: 'nombre', DATA_TYPE: 'varchar2', DATA_LENGTH: 100, NULLABLE: 'N' },
         { column_name: 'descripcion', data_type: 'varchar2', data_length: 200, nullable: 'Y', COLUMN_NAME: 'descripcion', DATA_TYPE: 'varchar2', DATA_LENGTH: 200, NULLABLE: 'Y' },
-        { column_name: 'fecha_creacion', data_type: 'date', data_length: 0, nullable: 'Y', COLUMN_NAME: 'fecha_creacion', DATA_TYPE: 'date', DATA_LENGTH: 0, NULLABLE: 'Y' }
+        { column_name: 'fecha_creacion', data_type: 'date', data_length: null, nullable: 'Y', COLUMN_NAME: 'fecha_creacion', DATA_TYPE: 'date', DATA_LENGTH: null, NULLABLE: 'Y' }
       ];
     }
     console.log(`Usando datos de prueba para columnas de ${tableName}:`, this.columns);

@@ -20,7 +20,6 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSortModule } from '@angular/material/sort';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -65,7 +64,6 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     MatPaginatorModule,
     MatSlideToggleModule,
     MatSortModule,
-    MatTabsModule,
     MatTooltipModule
   ],
   providers: [

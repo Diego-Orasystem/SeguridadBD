@@ -104,31 +104,19 @@
     <h3>Vista previa de enmascaramiento</h3>
     <p>Tabla: {{ selectedRule?.table_name }} | Columna: {{ selectedRule?.column_name }}</p>
     
-    <mat-tab-group>
-      <mat-tab label="Datos">
-        <div class="comparison-table">
-          <div class="data-row header">
-            <div class="original">Datos Originales</div>
-            <div class="masked">Datos Enmascarados</div>
-          </div>
-          <div class="data-row" *ngFor="let item of comparisonData">
-            <div class="original">{{ item.original }}</div>
-            <div class="masked">{{ item.masked }}</div>
-          </div>
-        </div>
-      </mat-tab>
-      <mat-tab label="Script SQL">
-        <div class="sql-script-container">
-          <pre class="sql-script">{{ sqlScript }}</pre>
-        </div>
-      </mat-tab>
-    </mat-tab-group>
+    <div class="comparison-table">
+      <div class="data-row header">
+        <div class="original">Datos Originales</div>
+        <div class="masked">Datos Enmascarados</div>
+      </div>
+      <div class="data-row" *ngFor="let item of comparisonData">
+        <div class="original">{{ item.original }}</div>
+        <div class="masked">{{ item.masked }}</div>
+      </div>
+    </div>
     
     <div class="preview-actions">
       <button mat-button (click)="closePreview()">Cerrar</button>
-      <button mat-raised-button color="primary" (click)="executeScript()" [disabled]="!selectedRule">
-        <mat-icon>play_arrow</mat-icon> Ejecutar script
-      </button>
     </div>
   </div>
 </div> 

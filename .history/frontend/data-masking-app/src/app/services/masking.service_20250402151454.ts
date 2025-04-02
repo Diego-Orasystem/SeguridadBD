@@ -211,7 +211,6 @@ export class MaskingService {
     }
 
     let script = '';
-    const ruleWithoutType = rule as Record<string, any>;
     
     // Comentarios iniciales
     script += `-- Script para aplicar enmascaramiento a ${rule.column_name} en la tabla ${rule.table_name}\n`;
@@ -227,7 +226,7 @@ export class MaskingService {
         break;
       
       case 'PARTIAL_MASK':
-        const visibleChars = ruleWithoutType['visible_characters'] || 2;
+        const visibleChars = rule.visible_characters || 2;
         script += `-- Actualización para aplicar enmascaramiento parcial (primeros ${visibleChars} caracteres visibles)\n`;
         script += `UPDATE ${rule.table_name}\n`;
         script += `SET ${rule.column_name} = CASE\n`;

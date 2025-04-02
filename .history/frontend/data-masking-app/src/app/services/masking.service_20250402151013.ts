@@ -60,7 +60,7 @@ export class MaskingService {
       } else {
         return of({
           success: false,
-          data: undefined,
+          data: null,
           message: 'Regla no encontrada'
         });
       }
@@ -111,8 +111,7 @@ export class MaskingService {
       const rule = rules.find(r => r.id === ruleId);
       if (rule) {
         // Marcar la regla como aplicada
-        const ruleWithoutType = rule as Record<string, any>;
-        ruleWithoutType['is_applied'] = true;
+        rule.is_applied = true;
         localStorage.setItem('maskingRules', JSON.stringify(rules));
         return of({
           success: true,
@@ -130,8 +129,7 @@ export class MaskingService {
       const rule = rules.find(r => r.id === ruleId);
       if (rule) {
         // Marcar la regla como no aplicada
-        const ruleWithoutType = rule as Record<string, any>;
-        ruleWithoutType['is_applied'] = false;
+        rule.is_applied = false;
         localStorage.setItem('maskingRules', JSON.stringify(rules));
         return of({
           success: true,
@@ -150,8 +148,7 @@ export class MaskingService {
       const rules = this.getLocalRules();
       const rule = rules.find(r => r.id === config.ruleId);
       if (rule) {
-        const ruleWithoutType = rule as Record<string, any>;
-        ruleWithoutType['triggers'] = config.operations;
+        rule.triggers = config.operations;
         localStorage.setItem('maskingRules', JSON.stringify(rules));
       }
       return of({
@@ -211,7 +208,6 @@ export class MaskingService {
     }
 
     let script = '';
-    const ruleWithoutType = rule as Record<string, any>;
     
     // Comentarios iniciales
     script += `-- Script para aplicar enmascaramiento a ${rule.column_name} en la tabla ${rule.table_name}\n`;
@@ -227,7 +223,7 @@ export class MaskingService {
         break;
       
       case 'PARTIAL_MASK':
-        const visibleChars = ruleWithoutType['visible_characters'] || 2;
+        const visibleChars = rule.visible_characters || 2;
         script += `-- Actualización para aplicar enmascaramiento parcial (primeros ${visibleChars} caracteres visibles)\n`;
         script += `UPDATE ${rule.table_name}\n`;
         script += `SET ${rule.column_name} = CASE\n`;
