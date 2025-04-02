@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Configurar Triggers para {{ data.tableName }}</h2>
+
+<mat-dialog-content>
+  <p>Seleccione las operaciones que desea permitir en la vista enmascarada:</p>
+  
+  <div class="operation-list">
+    <mat-selection-list [(ngModel)]="selectedOperations">
+      <mat-list-option *ngFor="let op of availableOperations" [value]="op.value" checkboxPosition="before">
+        {{ op.label }}
+      </mat-list-option>
+    </mat-selection-list>
+  </div>
+  
+  <p class="info-text">
+    <mat-icon color="accent">info</mat-icon>
+    Los triggers INSTEAD OF permiten que las operaciones en la vista se propaguen a la tabla original.
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()" [disabled]="loading">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="loading">
+    <mat-spinner diameter="20" *ngIf="loading" class="button-spinner"></mat-spinner>
+    <span *ngIf="!loading">Guardar</span>
+  </button>
+</mat-dialog-actions> 

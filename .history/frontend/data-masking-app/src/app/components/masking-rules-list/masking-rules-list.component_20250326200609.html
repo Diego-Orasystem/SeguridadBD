@@ -1,0 +1,134 @@
+<div class="masking-rules-container">
+  <div class="header-container">
+    <h1>Reglas de Enmascaramiento de Datos</h1>
+    <div class="schema-selector">
+      <mat-form-field appearance="outline">
+        <mat-label>Esquema</mat-label>
+        <input matInput [(ngModel)]="selectedSchema" placeholder="Esquema (opcional)">
+      </mat-form-field>
+      <button mat-button color="primary" (click)="onSchemaChange()">
+        <mat-icon>refresh</mat-icon> Actualizar
+      </button>
+    </div>
+    <button mat-raised-button color="primary" (click)="openNewRuleForm()">
+      <mat-icon>add</mat-icon> Nueva Regla
+    </button>
+  </div>
+
+  <div *ngIf="showForm" class="form-container">
+    <app-masking-rule-form 
+      [editingRule]="editingRule" 
+      [tables]="tables"
+      [schema]="selectedSchema"
+      (formSubmit)="saveRule($event)"
+      (formCancel)="cancelForm()">
+    </app-masking-rule-form>
+  </div>
+
+  <div class="table-container">
+    <div *ngIf="loading" class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+
+    <table mat-table [dataSource]="maskingRules" class="full-width" *ngIf="!loading && maskingRules.length > 0">
+      <!-- ID Column -->
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <td mat-cell *matCellDef="let rule">{{ rule.id }}</td>
+      </ng-container>
+
+      <!-- Table Name Column -->
+      <ng-container matColumnDef="table_name">
+        <th mat-header-cell *matHeaderCellDef>Tabla</th>
+        <td mat-cell *matCellDef="let rule">{{ rule.table_name }}</td>
+      </ng-container>
+
+      <!-- Column Name Column -->
+      <ng-container matColumnDef="column_name">
+        <th mat-header-cell *matHeaderCellDef>Columna</th>
+        <td mat-cell *matCellDef="let rule">{{ rule.column_name }}</td>
+      </ng-container>
+
+      <!-- Masking Type Column -->
+      <ng-container matColumnDef="masking_type">
+        <th mat-header-cell *matHeaderCellDef>Tipo de Enmascaramiento</th>
+        <td mat-cell *matCellDef="let rule">
+          <span [ngSwitch]="rule.masking_type">
+            <span *ngSwitchCase="'CREDIT_CARD'">Tarjeta de Crédito</span>
+            <span *ngSwitchCase="'EMAIL'">Correo Electrónico</span>
+            <span *ngSwitchCase="'PHONE'">Teléfono</span>
+            <span *ngSwitchCase="'FULL_MASK'">Enmascaramiento Completo</span>
+            <span *ngSwitchCase="'CUSTOM'">Personalizado</span>
+            <span *ngSwitchDefault>{{ rule.masking_type }}</span>
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Visible Chars Column -->
+      <ng-container matColumnDef="visible_chars">
+        <th mat-header-cell *matHeaderCellDef>Caracteres Visibles</th>
+        <td mat-cell *matCellDef="let rule">
+          {{ rule.visible_chars !== null && rule.visible_chars !== undefined ? rule.visible_chars : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Is Applied Column -->
+      <ng-container matColumnDef="is_applied">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let rule">
+          <mat-chip-listbox>
+            <mat-chip [color]="rule.is_applied === 'Y' ? 'primary' : 'warn'" selected>
+              {{ rule.is_applied === 'Y' ? 'Aplicado' : 'No aplicado' }}
+            </mat-chip>
+          </mat-chip-listbox>
+        </td>
+      </ng-container>
+
+      <!-- Created At Column -->
+      <ng-container matColumnDef="created_at">
+        <th mat-header-cell *matHeaderCellDef>Creado</th>
+        <td mat-cell *matCellDef="let rule">{{ formatDate(rule.created_at) }}</td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let rule">
+          <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="editRule(rule)">
+              <mat-icon>edit</mat-icon>
+              <span>Editar</span>
+            </button>
+            <button mat-menu-item *ngIf="rule.is_applied !== 'Y'" (click)="applyMasking(rule)">
+              <mat-icon>visibility_off</mat-icon>
+              <span>Aplicar Enmascaramiento</span>
+            </button>
+            <button mat-menu-item *ngIf="rule.is_applied === 'Y'" (click)="removeMasking(rule)">
+              <mat-icon>visibility</mat-icon>
+              <span>Eliminar Enmascaramiento</span>
+            </button>
+            <button mat-menu-item *ngIf="rule.is_applied === 'Y'" (click)="configureTriggers(rule)">
+              <mat-icon>settings</mat-icon>
+              <span>Configurar Triggers</span>
+            </button>
+            <button mat-menu-item (click)="confirmDelete(rule)">
+              <mat-icon>delete</mat-icon>
+              <span>Eliminar</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+
+    <div *ngIf="!loading && maskingRules.length === 0" class="no-data">
+      <mat-icon class="large-icon">visibility_off</mat-icon>
+      <p>No hay reglas de enmascaramiento definidas. Haga clic en "Nueva Regla" para crear una.</p>
+    </div>
+  </div>
+</div> 

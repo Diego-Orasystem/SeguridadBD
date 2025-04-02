@@ -1,0 +1,24 @@
+.operation-list {
+  margin: 16px 0;
+}
+
+.info-text {
+  display: flex;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.info-text mat-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  line-height: 18px;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin-right: 8px;
+} 
